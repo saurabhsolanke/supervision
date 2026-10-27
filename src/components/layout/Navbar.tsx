@@ -19,15 +19,27 @@ import {
   Users,
   Crown,
   Menu,
+  KeyRound,
+  Plus,
 } from 'lucide-react';
 
 interface NavbarProps {
   onOpenTeam: () => void;
   onOpenBilling: () => void;
+  onOpenAccountSettings?: () => void;
+  onOpenCreateProject?: () => void;
+  onOpenProjectsView?: () => void;
   onToggleMobileNav?: () => void;
 }
 
-export function Navbar({ onOpenTeam, onOpenBilling, onToggleMobileNav }: NavbarProps) {
+export function Navbar({
+  onOpenTeam,
+  onOpenBilling,
+  onOpenAccountSettings,
+  onOpenCreateProject,
+  onOpenProjectsView,
+  onToggleMobileNav,
+}: NavbarProps) {
   const router = useRouter();
   const {
     currentOrg,
@@ -44,6 +56,7 @@ export function Navbar({ onOpenTeam, onOpenBilling, onToggleMobileNav }: NavbarP
     isLoading,
     logout,
     isSuperAdmin,
+    canCreateProject,
   } = useTenant();
 
   const isAdmin = isSuperAdmin || currentRole === 'OWNER' || currentRole === 'ADMIN' || Boolean(currentUser?.isSuperAdmin);
@@ -147,7 +160,13 @@ export function Navbar({ onOpenTeam, onOpenBilling, onToggleMobileNav }: NavbarP
             <FolderGit2 size={14} className="text-white/70" />
             <select
               value={currentProject.id}
-              onChange={(e) => switchProject(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value === '__NEW_PROJECT__') {
+                  if (onOpenCreateProject) onOpenCreateProject();
+                } else {
+                  switchProject(e.target.value);
+                }
+              }}
               className="bg-white/10 hover:bg-white/20 text-white rounded px-2 py-0.5 text-xs font-semibold cursor-pointer focus:outline-none transition-colors"
             >
               {projects.map((p) => (
@@ -155,7 +174,22 @@ export function Navbar({ onOpenTeam, onOpenBilling, onToggleMobileNav }: NavbarP
                   {p.name} ({p.key})
                 </option>
               ))}
+              {canCreateProject && (
+                <option value="__NEW_PROJECT__" className="text-[#0078D4] font-bold">
+                  + Create New Project...
+                </option>
+              )}
             </select>
+            {canCreateProject && (
+              <button
+                type="button"
+                onClick={onOpenCreateProject}
+                className="p-1 rounded bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                title="Create New Project / App"
+              >
+                <Plus size={12} />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -292,6 +326,18 @@ export function Navbar({ onOpenTeam, onOpenBilling, onToggleMobileNav }: NavbarP
                     type="button"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
+                      if (onOpenProjectsView) onOpenProjectsView();
+                    }}
+                    className="w-full px-4 py-2 flex items-center gap-2.5 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    <FolderGit2 size={14} className="text-slate-400" />
+                    <span>Projects & Applications</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
                       onOpenTeam();
                     }}
                     className="w-full px-4 py-2 flex items-center gap-2.5 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
@@ -310,6 +356,18 @@ export function Navbar({ onOpenTeam, onOpenBilling, onToggleMobileNav }: NavbarP
                   >
                     <CreditCard size={14} className="text-slate-400" />
                     <span>SaaS Billing & Subscription</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      if (onOpenAccountSettings) onOpenAccountSettings();
+                    }}
+                    className="w-full px-4 py-2 flex items-center gap-2.5 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer font-medium"
+                  >
+                    <KeyRound size={14} className="text-[#0078D4]" />
+                    <span>Account Settings & Password</span>
                   </button>
 
                   {isAdmin && (

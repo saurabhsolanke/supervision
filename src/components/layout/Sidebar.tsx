@@ -15,13 +15,18 @@ import {
   ShieldAlert,
   Sparkles,
   X,
+  KeyRound,
+  FolderGit2,
+  Plus,
 } from 'lucide-react';
 
 interface SidebarProps {
-  currentView: 'boards' | 'sprints';
-  setCurrentView: (view: 'boards' | 'sprints') => void;
+  currentView: 'boards' | 'sprints' | 'projects';
+  setCurrentView: (view: 'boards' | 'sprints' | 'projects') => void;
   onOpenTeam: () => void;
   onOpenBilling: () => void;
+  onOpenAccountSettings?: () => void;
+  onOpenCreateProject?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
@@ -31,6 +36,8 @@ export function Sidebar({
   setCurrentView,
   onOpenTeam,
   onOpenBilling,
+  onOpenAccountSettings,
+  onOpenCreateProject,
   isMobileOpen = false,
   onCloseMobile,
 }: SidebarProps) {
@@ -42,6 +49,7 @@ export function Sidebar({
     projects,
     switchProject,
     currentRole,
+    canCreateProject,
   } = useTenant();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -130,9 +138,22 @@ export function Sidebar({
         {/* Project Picker (if not collapsed or in mobile drawer) */}
         {(!isCollapsed || isMobileOpen) && (
           <div className="p-3 border-b border-slate-100 dark:border-slate-800">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-              <FolderTree size={11} /> Project / App
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <FolderTree size={11} /> Project / App
+              </label>
+              {canCreateProject && (
+                <button
+                  type="button"
+                  onClick={() => handleNavClick(() => onOpenCreateProject && onOpenCreateProject())}
+                  className="text-[10px] text-[#0078D4] hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
+                  title="Create New Project"
+                >
+                  <Plus size={11} />
+                  <span>New</span>
+                </button>
+              )}
+            </div>
             <select
               value={currentProject?.id || ''}
               onChange={(e) => {
@@ -164,6 +185,27 @@ export function Sidebar({
           >
             <Kanban size={17} className={currentView === 'boards' ? 'text-[#0078D4]' : 'text-slate-400'} />
             {(!isCollapsed || isMobileOpen) && <span>Kanban Boards</span>}
+          </button>
+
+          {/* Projects & Apps Navigation */}
+          <button
+            onClick={() => handleNavClick(() => setCurrentView('projects'))}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+              currentView === 'projects'
+                ? 'bg-blue-50 dark:bg-blue-950/50 text-[#0078D4] dark:text-blue-400 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900'
+            }`}
+            title="Projects & Applications"
+          >
+            <FolderGit2 size={17} className={currentView === 'projects' ? 'text-[#0078D4]' : 'text-slate-400'} />
+            {(!isCollapsed || isMobileOpen) && (
+              <div className="flex-1 flex items-center justify-between">
+                <span>Projects & Apps</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-100 text-[#0078D4] dark:bg-blue-950 dark:text-blue-300 font-mono font-bold">
+                  {projects.length}
+                </span>
+              </div>
+            )}
           </button>
 
           {/* Sprints Navigation */}
@@ -219,6 +261,16 @@ export function Sidebar({
                 </span>
               </div>
             )}
+          </button>
+
+          {/* Account Settings & Security */}
+          <button
+            onClick={() => handleNavClick(() => onOpenAccountSettings && onOpenAccountSettings())}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 transition-colors cursor-pointer"
+            title="Account Settings & Password"
+          >
+            <KeyRound size={17} className="text-slate-400" />
+            {(!isCollapsed || isMobileOpen) && <span>Account Settings</span>}
           </button>
         </nav>
       </div>

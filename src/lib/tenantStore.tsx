@@ -70,6 +70,19 @@ interface TenantContextType {
   canInviteMembers: boolean;
   canManageBilling: boolean;
   canCustomizeWip: boolean;
+  canCreateProject: boolean;
+  createProject: (data: {
+    name: string;
+    key: string;
+    description?: string;
+    icon?: string;
+    organizationId?: string;
+  }) => Promise<{ success: boolean; error?: string; project?: Project }>;
+  updateProject: (
+    id: string,
+    updates: { name?: string; key?: string; description?: string; icon?: string }
+  ) => Promise<{ success: boolean; error?: string; project?: Project }>;
+  deleteProject: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const defaultFilterState: BoardFilterState = {
@@ -178,6 +191,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     isSuperAdmin ||
     ((currentRole === 'OWNER' || currentRole === 'ADMIN') &&
     PLAN_CONFIGS[planTier]?.hasCustomWipLimits);
+  const canCreateProject = isSuperAdmin || currentRole === 'OWNER' || currentRole === 'ADMIN';
 
   const tenantMembers =
     currentOrg?.memberships?.map((m) => ({
@@ -650,6 +664,86 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const createProject = async (data: {
+    name: string;
+    key: string;
+    description?: string;
+    icon?: string;
+    organizationId?: string;
+  }): Promise<{ success: boolean; error?: string; project?: Project }> => {
+    try {
+      const orgId = data.organizationId || currentOrgId;
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, organizationId: orgId }),
+      });
+      const resData = await res.json();
+      if (!res.ok) {
+        return { success: false, error: resData.error || 'Failed to create project' };
+      }
+      if (orgId === currentOrgId) {
+        await loadTenantWorkspaces(orgId);
+        if (resData.project) {
+          setCurrentProjectId(resData.project.id);
+        }
+      }
+      return { success: true, project: resData.project };
+    } catch (err: any) {
+      console.error('Failed to create project:', err);
+      return { success: false, error: err.message || 'Failed to connect to server' };
+    }
+  };
+
+  const updateProject = async (
+    id: string,
+    updates: { name?: string; key?: string; description?: string; icon?: string }
+  ): Promise<{ success: boolean; error?: string; project?: Project }> => {
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Failed to update project' };
+      }
+      if (currentOrgId) {
+        await loadTenantWorkspaces(currentOrgId);
+      }
+      return { success: true, project: data.project };
+    } catch (err: any) {
+      console.error('Failed to update project:', err);
+      return { success: false, error: err.message || 'Failed to update project' };
+    }
+  };
+
+  const deleteProject = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Failed to delete project' };
+      }
+      if (currentOrgId) {
+        await loadTenantWorkspaces(currentOrgId);
+        if (currentProjectId === id) {
+          const remainingProjects = projects.filter((p) => p.id !== id);
+          if (remainingProjects.length > 0) {
+            setCurrentProjectId(remainingProjects[0].id);
+          }
+        }
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.error('Failed to delete project:', err);
+      return { success: false, error: err.message || 'Failed to delete project' };
+    }
+  };
+
   return (
     <TenantContext.Provider
       value={{
@@ -692,6 +786,10 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         canInviteMembers,
         canManageBilling,
         canCustomizeWip,
+        canCreateProject,
+        createProject,
+        updateProject,
+        deleteProject,
       }}
     >
       {children}

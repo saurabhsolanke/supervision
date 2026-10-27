@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
+import { hashPassword } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,11 +44,13 @@ export async function POST(req: NextRequest) {
     if (!user) {
       const namePart = email.split('@')[0].replace(/[._]/g, ' ');
       const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+      const defaultPasswordHash = await hashPassword('Supervision2026!');
 
       user = await prisma.user.create({
         data: {
           email: email.toLowerCase(),
           name: formattedName,
+          passwordHash: defaultPasswordHash,
           avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(formattedName)}`,
           jobTitle: 'Software Engineer',
         },

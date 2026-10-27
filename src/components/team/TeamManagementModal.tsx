@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useTenant } from '@/lib/tenantStore';
 import { Role } from '@/types';
-import { Users, Mail, UserPlus, AlertCircle, CheckCircle, Shield, Sparkles, X } from 'lucide-react';
+import { Users, Mail, UserPlus, AlertCircle, CheckCircle, Shield, Sparkles, X, KeyRound, Copy, Check } from 'lucide-react';
 
 interface TeamManagementModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ export function TeamManagementModal({ isOpen, onClose, onOpenBilling }: TeamMana
   const [role, setRole] = useState<Role>('MEMBER');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   if (!isOpen || !currentOrg) return null;
 
@@ -39,7 +40,7 @@ export function TeamManagementModal({ isOpen, onClose, onOpenBilling }: TeamMana
 
     const res = await inviteMember(email.trim(), role);
     if (res.success) {
-      setSuccessMessage(`Invitation successfully sent to ${email} as ${role}!`);
+      setSuccessMessage(`Invitation sent to ${email} as ${role}! Initial login password: Supervision2026! (User can change it in Account Settings).`);
       setEmail('');
     } else {
       setErrorMessage(res.error || 'Failed to send invitation');
@@ -153,6 +154,28 @@ export function TeamManagementModal({ isOpen, onClose, onOpenBilling }: TeamMana
               )}
 
               <form onSubmit={handleInvite} className="space-y-3">
+                {/* Default Password Notice with 1-Click Copy */}
+                <div className="p-2.5 rounded bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-950 dark:text-blue-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <KeyRound size={14} className="text-[#0078D4] shrink-0" />
+                    <span>
+                      Initial Password: <strong className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.2 rounded font-bold">Supervision2026!</strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText('Supervision2026!');
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-800 text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 flex items-center gap-1 shrink-0 cursor-pointer"
+                  >
+                    {copied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
